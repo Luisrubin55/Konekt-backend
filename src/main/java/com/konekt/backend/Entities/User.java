@@ -2,6 +2,7 @@ package com.konekt.backend.Entities;
 
 import java.util.Date;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.konekt.backend.Validation.ExistsByEmail;
 
 import jakarta.persistence.Entity;
@@ -35,6 +36,7 @@ public class User {
     @NotBlank
     private String email;
     @NotBlank
+    @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
     private String password;
     private Boolean active;
     private Long token;

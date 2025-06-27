@@ -9,4 +9,5 @@ import com.konekt.backend.Entities.User;
 public interface UserRepository extends JpaRepository<User, Integer>{
     boolean existsByEmail(String email);
     Optional<User> findByEmail(String email);
+    Optional<User> findByToken(Long token);
 }
