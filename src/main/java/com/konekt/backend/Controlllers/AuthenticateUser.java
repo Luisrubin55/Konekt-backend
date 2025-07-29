@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.konekt.backend.Entities.User;
+import com.konekt.backend.Middlewares.DecodedJWTValidation;
 import com.konekt.backend.Services.IUserService;
 import com.konekt.backend.Validation.ValidationFields;
 
@@ -21,8 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-
+import org.springframework.web.bind.annotation.RequestHeader;
 
 @RestController
 @RequestMapping("/api/user")
@@ -34,22 +34,18 @@ public class AuthenticateUser {
     @Autowired
     private IUserService iUserService;
 
-    @GetMapping
-    public ResponseEntity<?> getAllUsers() {
-        return ResponseEntity.status(HttpStatus.OK).body(iUserService.GetAllUsers());
-    }
+    @GetMapping()
+    public ResponseEntity<?> getUser(@RequestHeader("Authorization") String authHeader) {
 
-    @GetMapping("/{email}")
-    public ResponseEntity<?> getByEmail(@PathVariable String email) {
-        Optional<User> userOptional = iUserService.GetByEmail(email);
-        Map<String, String> message = new HashMap<>();
-        if (userOptional.isPresent()) {
-            return ResponseEntity.ok().body(userOptional.orElseThrow());
+        if (!authHeader.startsWith("Bearer ")) {
+            Map<String, String> message = new HashMap<>();
+             message.put("message", "No autorizado");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
         }
-        message.put("message", "Usuario no encontrado");
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+
+        String email = DecodedJWTValidation.decodedJWT(authHeader);
+        return ResponseEntity.status(HttpStatus.OK).body(iUserService.GetByEmail(email));
     }
-    
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody User user, BindingResult result) {
@@ -70,7 +66,7 @@ public class AuthenticateUser {
     }
 
     @PostMapping("/validate-token")
-    public ResponseEntity<?> valideUser(@RequestBody Map<String, Long> token) {
+    public ResponseEntity<?> validateUser(@RequestBody Map<String, Long> token) {
         Map<String, String> message = new HashMap<>();
         Boolean validateToken = iUserService.ValidateToken(token.get("token"));
 
@@ -94,7 +90,7 @@ public class AuthenticateUser {
         message.put("message", "Token enviado, revisa tu correo electronico");
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(message);
     }
-    
+
     @PostMapping("/recover-password/{token}")
     public ResponseEntity<?> recoverPassword(@PathVariable Long token, @RequestBody User user) {
         Optional<User> userOptional = iUserService.recoverPassword(token, user);
